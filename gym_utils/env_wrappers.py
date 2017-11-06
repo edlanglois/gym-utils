@@ -138,3 +138,70 @@ class BufferObservations(gym.ObservationWrapper):
 
     def _get_observation(self):
         return np.concatenate(self._observation_buffer)
+
+
+class SemiSupervisedFiniteReward(gym.Wrapper):
+    """Convert an environment into a finite-reward semi-supervised RL env.
+
+    At most `max_rewards` nonzero reward observations are given. This may
+    either be the all reward observations until the limit, or reward may be
+    specifically requested. All other reward observations are zero.
+
+    The reward limit persists through resets.
+    """
+
+    def __init__(self,
+                 env,
+                 max_rewards,
+                 reward_indicator_observation=False,
+                 reward_on_request=False):
+        """Initialize SemiSupervisedFixedFiniteReward environment.
+
+        Args:
+            env: Environment to wrap.
+            max_rewards: Maximum allowed reward observations.
+            reward_indicator_observation: Augment observation space with a bit
+                that indicates whether the reward is the true reward (1) or
+                constant zero (0).
+            reward_on_request: If `True`, augment the action space with a bit
+                that requests the true reward for the current step.
+        """
+        super().__init__(env)
+        self.rewards_given = 0
+        self.max_rewards = max_rewards
+        self.reward_indicator_observation = reward_indicator_observation
+        self.reward_on_request = reward_on_request
+
+        if reward_indicator_observation:
+            self.observation_space = spaces.tuple(self.observation_space,
+                                                  spaces.Discrete(2))
+
+        if reward_on_request:
+            self.action_space = spaces.tuple(self.action_space,
+                                             spaces.Discrete(2))
+
+        # Ensure 0 is contained in the reward range.
+        self.reward_range = (min(self.reward_range[0], 0), max(
+            self.reward_range[1], 0))
+
+    def _step(self, action):
+        can_give_reward = self.rewards_given < self.max_rewards
+        if self.reward_on_request:
+            action, requesting_reward = action
+            give_reward = can_give_reward and requesting_reward
+        else:
+            give_reward = can_give_reward
+
+        observation, reward, done, info = self.env.step(action)
+        if give_reward:
+            self.rewards_given += 1
+        else:
+            reward = 0
+
+        if info is None:
+            info = {}
+        info['true_reward'] = give_reward
+        if self.reward_indicator_observation:
+            observation = (observation, give_reward)
+
+        return observation, reward, done, info
