@@ -206,17 +206,12 @@ class SemiSupervisedFiniteReward(gym.Wrapper):
 
     def _step(self, action):
         can_give_reward = self.rewards_given < self.max_rewards
-        print('Env AS', self.env.action_space)
-        print('Self AS', self.action_space)
-        print('action0', action)
         if self.reward_on_request:
             action, requesting_reward = action
             give_reward = can_give_reward and requesting_reward
         else:
             give_reward = can_give_reward
 
-        print(self.reward_on_request)
-        print('action', action)
         observation, reward, done, info = self.env.step(action)
         if give_reward:
             self.rewards_given += 1
