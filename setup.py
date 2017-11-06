@@ -6,5 +6,6 @@ setuptools.setup(
     description='Open AI gym utilities.',
     install_requires=[
         'gym',
+        'numpy',
     ],
 )
