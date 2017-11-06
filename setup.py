@@ -8,4 +8,10 @@ setuptools.setup(
         'gym',
         'numpy',
     ],
-)
+    setup_requires=[
+        'pytest-runner',
+    ],
+    tests_require=[
+        'pytest',
+    ],
+    test_suite='pytest', )

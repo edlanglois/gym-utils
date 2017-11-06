@@ -9,6 +9,7 @@ __all__ = [
     'FlatBoxView',
     'FlattenObservations',
     'BufferObservations',
+    'SemiSupervisedFiniteReward',
 ]
 
 
@@ -43,6 +44,16 @@ def _flatten_space(space):
             return ident[x]
 
     elif isinstance(space, spaces.Tuple):
+        if not space.spaces:  # Empty tuple space
+            low = np.empty((0, ))
+            high = np.empty((0, ))
+
+            def transformer(x):
+                del x
+                return np.empty((0, ))
+
+            return low, high, transformer
+
         # Append dimensions
         lows, highs, transformers = zip(*(_flatten_space(subspace)
                                           for subspace in space.spaces))
@@ -99,6 +110,9 @@ class FlattenObservations(gym.ObservationWrapper):
 
 class BufferObservations(gym.ObservationWrapper):
     """Environment wrapper, observations are a buffer of recent observations.
+
+    Wrapped environment observation space must be a `Box` space. Prepends
+    the history buffer dimension to the space.
     """
 
     def __init__(self, env, buffer_size):
@@ -137,7 +151,13 @@ class BufferObservations(gym.ObservationWrapper):
         return self._get_observation(), reward, done, info
 
     def _get_observation(self):
-        return np.concatenate(self._observation_buffer)
+        try:
+            return np.stack(self._observation_buffer)
+        except ValueError:
+            # np.stack fails if the buffer has size 0
+            if self.buffer_size == 0:
+                return self.observation_space.sample()
+            raise
 
 
 class SemiSupervisedFiniteReward(gym.Wrapper):
@@ -173,12 +193,12 @@ class SemiSupervisedFiniteReward(gym.Wrapper):
         self.reward_on_request = reward_on_request
 
         if reward_indicator_observation:
-            self.observation_space = spaces.tuple(self.observation_space,
-                                                  spaces.Discrete(2))
+            self.observation_space = spaces.Tuple((self.observation_space,
+                                                   spaces.Discrete(2)))
 
         if reward_on_request:
-            self.action_space = spaces.tuple(self.action_space,
-                                             spaces.Discrete(2))
+            self.action_space = spaces.Tuple((self.action_space,
+                                              spaces.Discrete(2)))
 
         # Ensure 0 is contained in the reward range.
         self.reward_range = (min(self.reward_range[0], 0), max(
@@ -186,12 +206,17 @@ class SemiSupervisedFiniteReward(gym.Wrapper):
 
     def _step(self, action):
         can_give_reward = self.rewards_given < self.max_rewards
+        print('Env AS', self.env.action_space)
+        print('Self AS', self.action_space)
+        print('action0', action)
         if self.reward_on_request:
             action, requesting_reward = action
             give_reward = can_give_reward and requesting_reward
         else:
             give_reward = can_give_reward
 
+        print(self.reward_on_request)
+        print('action', action)
         observation, reward, done, info = self.env.step(action)
         if give_reward:
             self.rewards_given += 1
