@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Run an RL algorithm on an OpenAI gym environment."""
 import argparse
+import importlib
 import itertools
 
 import gym
@@ -66,12 +67,23 @@ def parse_args():
         help='Run for at most %(metavar)s steps.')
     parser.add_argument(
         '--render', action='store_true', help='Render the environment.')
+    parser.add_argument(
+        '-I',
+        '--import',
+        type=str,
+        nargs='+',
+        dest='import_',
+        help='Import the named modules before creating the environment.')
 
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    if args.import_:
+        for module_name in args.import_:
+            importlib.import_module(module_name)
+
     env = gym.make(args.env)
     agent = args.agent(env)
 
