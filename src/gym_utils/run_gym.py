@@ -3,6 +3,9 @@
 import argparse
 import importlib
 import itertools
+import os.path
+import tempfile
+import time
 
 import gym
 from gym_utils import agents
@@ -73,7 +76,17 @@ def parse_args():
         type=str,
         nargs='+',
         dest='import_',
+        metavar='MODULE',
         help='Import the named modules before creating the environment.')
+    parser.add_argument(
+        '--log',
+        action='store_true',
+        help='If true, store logs about the run.')
+    parser.add_argument(
+        '--log-dir',
+        default=os.path.join(tempfile.gettempdir(),
+                             os.path.splitext(os.path.basename(__file__))[0]),
+        help='Base logging directory. (default: %(default)s)')
 
     return parser.parse_args()
 
@@ -85,6 +98,8 @@ def main():
             importlib.import_module(module_name)
 
     env = gym.make(args.env)
+    if args.log:
+        env = gym.wrappers.Monitor(env, args.log_dir)
     agent = args.agent(env)
 
     observation = env.reset()
