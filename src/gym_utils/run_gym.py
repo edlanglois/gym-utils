@@ -99,7 +99,10 @@ def main():
 
     env = gym.make(args.env)
     if args.log:
-        env = gym.wrappers.Monitor(env, args.log_dir)
+        env = gym.wrappers.Monitor(env,
+                                   os.path.join(
+                                       args.log_dir,
+                                       time.strftime('%Y.%m.%d-%H.%M.%S')))
     agent = args.agent(env)
 
     observation = env.reset()
