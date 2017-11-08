@@ -39,7 +39,10 @@ def parse_args():
         metavar='N',
         help='Run training for at most %(metavar)s steps.')
     parser.add_argument(
-        '--render', action='store_true', help='Render the environment.')
+        '--no-render',
+        action='store_false',
+        dest='render',
+        help="Don't render the environment.")
     parser.add_argument(
         '-I',
         '--import',
