@@ -1,4 +1,10 @@
 """RL Agents."""
+import os
+import os.path
+
+from baselines import deepq
+
+from gym_utils import env_wrappers
 
 
 class Agent():
@@ -49,3 +55,47 @@ class RandomAgent(Agent):
     def act(self, observation):
         del observation
         return self.env.action_space.sample()
+
+
+class DeepQAgent(Agent):
+    def __init__(self, env):
+        super().__init__(env)
+        self.model = deepq.models.mlp([64], layer_norm=True)
+        self.actor = None
+        self._model_filename = 'dqn_model.pkl'
+
+    @staticmethod
+    def wrap_env(env):
+        return env_wrappers.FlattenObservations(env)
+
+    def train(self, max_timesteps, env=None):
+        self.actor = deepq.learn(
+            env or self.env,
+            q_func=self.model,
+            max_timesteps=max_timesteps,
+            param_noise=True)
+        return True
+
+    def save(self, directory):
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        model_file = os.path.join(directory, self._model_filename)
+        print('Saving model to:', model_file)
+        self.actor.save(model_file)
+
+    def load(self, directory):
+        model_file = os.path.join(directory, self._model_filename)
+        print('Loading model from:', model_file)
+        self.actor = deepq.load(model_file)
+
+    def act(self, observation):
+        if self.actor is None:
+            raise RuntimeError(
+                'DeepQAgent must be trained with train() before it can be '
+                'used.')
+        try:
+            obs_vector = observation[None, :]
+        except TypeError as e:
+            raise TypeError('Environment not supported. '
+                            'Wrap it with `wrap_env` first.') from e
+        return self.actor(obs_vector)[0]

@@ -62,6 +62,7 @@ def parse_args():
         default='random',
         choices={
             'random': agents.RandomAgent,
+            'dqn': agents.DeepQAgent,
         },
         help='Agent')
     parser.add_argument(
