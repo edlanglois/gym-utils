@@ -213,14 +213,13 @@ class SemiSupervisedFiniteReward(gym.Wrapper):
             give_reward = can_give_reward
 
         observation, reward, done, info = self.env.step(action)
+        info['true_reward'] = reward
+        info['is_true_reward'] = give_reward
         if give_reward:
             self.rewards_given += 1
         else:
             reward = 0
 
-        if info is None:
-            info = {}
-        info['true_reward'] = give_reward
         if self.reward_indicator_observation:
             observation = (observation, give_reward)
 

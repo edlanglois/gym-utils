@@ -80,7 +80,7 @@ def main():
     agent = args.agent(env)
 
     if args.log:
-        train_env = gym.wrappers.Monitor(env, log_dir)
+        train_env = gym.wrappers.Monitor(env, log_dir, mode='training')
     else:
         train_env = env
 

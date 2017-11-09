@@ -98,7 +98,8 @@ def _assert_cartpole_with_reward(step_returns, reward_indicator_observation):
                            'a completed environment.')
     # CartPole-v0 always has reward 1
     assert reward == 1
-    assert info['true_reward']
+    assert info['is_true_reward']
+    assert info['true_reward'] == 1
     if reward_indicator_observation:
         _, true_reward = obs
         assert true_reward == 1
@@ -111,7 +112,8 @@ def _assert_cartpole_without_reward(step_returns,
         raise RuntimeError('Test case does not yet deal with resetting '
                            'a completed environment.')
     assert reward == 0
-    assert not info['true_reward']
+    assert not info['is_true_reward']
+    assert info['true_reward'] == 1
     if reward_indicator_observation:
         _, true_reward = obs
         assert true_reward == 0

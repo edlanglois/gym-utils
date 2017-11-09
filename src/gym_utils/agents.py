@@ -16,6 +16,7 @@ class Agent():
         Args:
             env: The gym environment. An instance of `gym.Env`.
         """
+        self.env = env
 
     @staticmethod
     def wrap_env(env):
@@ -55,6 +56,12 @@ class RandomAgent(Agent):
     def act(self, observation):
         del observation
         return self.env.action_space.sample()
+
+    def save(self, directory):
+        pass
+
+    def load(self, directory):
+        pass
 
 
 class DeepQAgent(Agent):
